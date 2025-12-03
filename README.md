@@ -496,8 +496,8 @@ PySenseDF represents the future of data analysis in Python:
 
 ## 📞 Support
 
-- **Issues:** https://github.com/yourusername/PySenseDF/issues
-- **Discussions:** https://github.com/yourusername/PySenseDF/discussions
+- **Issues:** https://github.com/idrissbado/PySenseDF/issues
+- **Discussions:** https://github.com/idrissbado/PySenseDF/discussions
 - **Email:** idrissbadoolivier@gmail.com
 
 ---
