@@ -1,0 +1,14 @@
+# Core dependencies (none - pure Python!)
+
+# Optional performance
+# numpy>=1.21.0
+# numba>=0.55.0
+
+# Optional ML
+# scikit-learn>=1.0.0
+# xgboost>=1.5.0
+
+# Optional data formats
+# pyarrow>=6.0.0
+# openpyxl>=3.0.0
+# sqlalchemy>=1.4.0
