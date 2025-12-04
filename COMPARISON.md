@@ -599,7 +599,7 @@ df.auto_features()       # Automatic feature engineering
 
 ### **Pandas:**
 ```
-Your Code
+Application Code
     ↓
 Pandas API Layer
     ↓
@@ -621,7 +621,7 @@ Computation
 
 ### **PySenseDF:**
 ```
-Your Code
+Application Code
     ↓
 Direct Python Computation
     ↓
