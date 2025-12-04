@@ -1,0 +1,16 @@
+product_id,product_name,category,price,stock,supplier,rating,reviews_count
+1,Laptop Pro 15,Electronics,1299.99,45,TechCorp,4.5,328
+2,Wireless Mouse,Electronics,29.99,150,TechCorp,4.2,892
+3,Office Chair,Furniture,249.99,32,OfficePlus,4.7,156
+4,Standing Desk,Furniture,599.99,18,OfficePlus,4.8,234
+5,USB-C Cable,Electronics,19.99,250,TechCorp,4.3,445
+6,Notebook Set,Stationery,15.99,120,PaperWorld,4.1,78
+7,Mechanical Keyboard,Electronics,149.99,67,TechCorp,4.6,512
+8,Monitor 27 inch,Electronics,349.99,28,TechCorp,4.4,289
+9,Desk Lamp,Furniture,79.99,85,OfficePlus,4.2,167
+10,Pen Set Premium,Stationery,24.99,95,PaperWorld,4.0,92
+11,Headphones Wireless,Electronics,199.99,41,TechCorp,4.7,634
+12,Webcam HD,Electronics,89.99,55,TechCorp,4.3,421
+13,Bookshelf,Furniture,189.99,15,OfficePlus,4.5,203
+14,Whiteboard,Stationery,79.99,38,PaperWorld,4.4,134
+15,Laptop Stand,Electronics,49.99,72,TechCorp,4.1,256

@@ -1,6 +1,6 @@
 # 🚀 PySenseDF - The DataFrame That Kills Pandas
 
-**v0.1.0** | Pure Python | AI-Powered | Faster Than Pandas | Natural Language Queries
+**v0.2.0** | Pure Python | AI-Powered | Faster Than Pandas | Natural Language Queries
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -67,12 +67,60 @@ pip install pysensedf
 pip install pysensedf[full]
 
 # From source
-git clone https://github.com/yourusername/PySenseDF.git
+git clone https://github.com/idrissbado/PySenseDF.git
 cd PySenseDF
 pip install -e .
 ```
 
 ### 30 Second Demo - Replace 100 Lines of Pandas with 3 Lines
+
+**NEW in v0.2.0: REAL AI Features Working!** 🎉
+
+```python
+from pysensedf import DataFrame, datasets
+
+# Load sample data
+df = datasets.load_customers()
+
+# 🔥 AI-POWERED: Ask in natural language!
+df.ask("show top 5 customers")
+df.ask("filter by age > 30")
+df.ask("sort by revenue descending")
+df.ask("average income")
+df.ask("count")
+
+# 🧹 AUTO-CLEAN: One-line data cleaning!
+df_clean = df.autoclean()  # Automatic type detection, missing values, etc.
+
+# ⚡ AUTO-FEATURES: One-line feature engineering!
+df_features = df.autofeatures(target="revenue")  # Auto date features, ratios, interactions
+
+# 📊 GROUP BY: Works like SQL!
+df.groupby("city").mean()
+```
+
+**NEW in v0.1.2: Built-in Sample Datasets!**
+
+```python
+from pysensedf import DataFrame, datasets
+
+# Load sample data (no CSV file needed!)
+df = datasets.load_customers()
+
+# Explore the data
+print(f"Shape: {df.shape()}")
+print(f"Columns: {df.columns()}")
+print(df.head())
+
+# Filter and analyze
+active_customers = df.filter("status == 'active'")
+print(f"Active customers: {active_customers.shape()[0]}")
+```
+
+**Available Sample Datasets:**
+- `datasets.load_customers()` - 20 customer records with demographics and revenue
+- `datasets.load_products()` - 15 products with prices, stock, and ratings
+- `datasets.load_sales()` - 15 sales orders with dates and amounts
 
 **Pandas (the old way):**
 ```python
@@ -496,8 +544,8 @@ PySenseDF represents the future of data analysis in Python:
 
 ## 📞 Support
 
-- **Issues:** https://github.com/yourusername/PySenseDF/issues
-- **Discussions:** https://github.com/yourusername/PySenseDF/discussions
+- **Issues:** https://github.com/idrissbado/PySenseDF/issues
+- **Discussions:** https://github.com/idrissbado/PySenseDF/discussions
 - **Email:** idrissbadoolivier@gmail.com
 
 ---

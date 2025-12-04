@@ -12,7 +12,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysensedf",
-    version="0.1.0",
+    version="0.3.0",
     author="Idriss Bado",
     author_email="idrissbadoolivier@gmail.com",
     description="AI-powered native Python DataFrame that kills Pandas - natural language queries, auto-clean, lazy execution",
@@ -20,6 +20,10 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/idrissbado/PySenseDF",
     packages=find_packages(exclude=("tests", "examples")),
+    package_data={
+        "pysensedf.datasets": ["*.csv"],
+    },
+    include_package_data=True,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",

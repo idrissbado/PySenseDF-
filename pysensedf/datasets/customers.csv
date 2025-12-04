@@ -1,0 +1,21 @@
+customer_id,name,city,age,income,revenue,purchase_count,last_purchase_date,status
+1,John Doe,New York,28,75000,1250,15,2024-11-15,active
+2,Jane Smith,Los Angeles,34,82000,1800,22,2024-11-20,active
+3,Bob Johnson,New York,45,95000,2100,18,2024-11-18,active
+4,Alice Brown,Chicago,29,68000,950,8,2024-10-05,inactive
+5,Charlie Wilson,Los Angeles,52,110000,3200,35,2024-11-25,active
+6,Diana Garcia,New York,31,78000,1450,12,2024-11-10,active
+7,Eve Martinez,Chicago,38,88000,1650,19,2024-11-22,active
+8,Frank Lopez,Los Angeles,42,92000,2300,28,2024-11-19,active
+9,Grace Lee,New York,27,71000,1150,9,2024-09-30,inactive
+10,Henry Kim,Chicago,36,85000,1900,21,2024-11-21,active
+11,Ivy Chen,New York,33,79000,1550,14,2024-11-12,active
+12,Jack Smith,Los Angeles,41,98000,2800,31,2024-11-24,active
+13,Karen White,Chicago,30,73000,1200,11,2024-11-08,active
+14,Leo Brown,New York,48,105000,3500,42,2024-11-26,active
+15,Maria Rodriguez,Los Angeles,26,65000,850,6,2024-08-15,inactive
+16,Nathan Green,Chicago,35,81000,1750,17,2024-11-14,active
+17,Olivia Davis,New York,39,91000,2200,25,2024-11-23,active
+18,Paul Wilson,Los Angeles,44,99000,2650,29,2024-11-20,active
+19,Quinn Taylor,Chicago,32,76000,1400,13,2024-11-11,active
+20,Rachel Moore,New York,37,87000,2050,23,2024-11-17,active
