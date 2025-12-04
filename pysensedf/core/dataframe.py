@@ -9,6 +9,8 @@ from typing import List, Dict, Any, Optional, Union, Callable
 import csv
 import json
 from pathlib import Path
+import hashlib
+from multiprocessing import Pool, cpu_count
 
 
 class Column:
@@ -87,18 +89,122 @@ class DataFrame:
     - SQL queries: df.sql("SELECT * FROM df")
     - Lazy execution with optimization
     - Pure Python, faster than Pandas
+    - Optional NumPy backend for big data (> 100K rows)
+    - Smart caching for repeated operations
+    - Parallel processing for multi-core systems
     """
     
-    def __init__(self, data: Optional[Dict[str, List[Any]]] = None):
+    def __init__(self, 
+                 data: Optional[Dict[str, List[Any]]] = None,
+                 backend: str = 'auto',
+                 n_jobs: int = 1,
+                 enable_cache: bool = True):
         """
         Initialize DataFrame with dict-of-lists (columnar storage)
         
         Args:
             data: Dictionary mapping column names to lists of values
+            backend: 'auto', 'python', or 'numpy'. Auto selects based on data size.
+            n_jobs: Number of parallel jobs (1=sequential, -1=all CPU cores)
+            enable_cache: Enable smart caching for repeated operations (default: True)
         """
         self._data = data or {}
         self._lazy = False
         self._operations = []
+        self._enable_cache = enable_cache
+        self._cache = {} if enable_cache else None
+        self._data_version = 0  # Increments when data changes
+        self._n_jobs = cpu_count() if n_jobs == -1 else n_jobs
+        
+        # Smart backend selection
+        self._backend = self._select_backend(backend)
+        
+        # Convert to appropriate backend storage
+        self._convert_to_backend()
+    
+    def _select_backend(self, backend: str) -> str:
+        """
+        Select appropriate backend based on data size
+        
+        Args:
+            backend: 'auto', 'python', or 'numpy'
+            
+        Returns:
+            Selected backend name
+        """
+        if backend == 'auto':
+            # Auto-detect based on data size
+            if not self._data:
+                return 'python'
+            
+            try:
+                # Get row count
+                row_count = len(next(iter(self._data.values())))
+                
+                # Use NumPy for large datasets (if available)
+                if row_count > 100000:
+                    try:
+                        import numpy as np
+                        return 'numpy'
+                    except ImportError:
+                        # NumPy not available, fall back to Python
+                        return 'python'
+                else:
+                    return 'python'
+            except (StopIteration, AttributeError):
+                return 'python'
+        
+        # Validate requested backend
+        if backend == 'numpy':
+            try:
+                import numpy as np
+                return 'numpy'
+            except ImportError:
+                print("⚠️  NumPy not available, falling back to Python backend")
+                return 'python'
+        
+        return 'python'
+    
+    def _convert_to_backend(self):
+        """Convert data to appropriate backend storage format"""
+        if self._backend == 'numpy':
+            try:
+                import numpy as np
+                # Convert lists to NumPy arrays
+                self._data = {k: np.array(v) if not isinstance(v, np.ndarray) else v 
+                             for k, v in self._data.items()}
+            except ImportError:
+                self._backend = 'python'
+                self._data = {k: list(v) for k, v in self._data.items()}
+        else:
+            # Ensure Python lists
+            self._data = {k: list(v) if not isinstance(v, list) else v 
+                         for k, v in self._data.items()}
+    
+    def _invalidate_cache(self):
+        """Invalidate cache when data changes"""
+        if self._enable_cache:
+            self._cache = {}
+            self._data_version += 1
+    
+    def _get_cache_key(self, operation: str, *args, **kwargs) -> str:
+        """Generate cache key for operation"""
+        key_parts = [operation, str(self._data_version)]
+        key_parts.extend(str(arg) for arg in args)
+        key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
+        key_str = "_".join(key_parts)
+        return hashlib.md5(key_str.encode()).hexdigest()
+    
+    def _get_from_cache(self, cache_key: str) -> Optional[Any]:
+        """Get result from cache if available"""
+        if self._enable_cache and cache_key in self._cache:
+            return self._cache[cache_key]
+        return None
+    
+    def _store_in_cache(self, cache_key: str, result: Any):
+        """Store result in cache"""
+        if self._enable_cache:
+            self._cache[cache_key] = result
         
         # Validate all columns have same length
         if self._data:
@@ -135,7 +241,7 @@ class DataFrame:
     
     def __setitem__(self, key: str, value: Union[List[Any], Any]) -> None:
         """
-        Set column values
+        Set column values and invalidate cache
         
         Examples:
             df['new_col'] = [1, 2, 3]
@@ -156,6 +262,9 @@ class DataFrame:
             else:
                 # Broadcast single value
                 self._data[key] = [value] * n_rows
+        
+        # Invalidate cache when data changes
+        self._invalidate_cache()
     
     def __len__(self) -> int:
         """Return number of rows"""
@@ -344,61 +453,137 @@ class DataFrame:
     
     # ==================== STATISTICAL METHODS (Beat Pandas!) ====================
     
-    def describe(self) -> "DataFrame":
+    def _describe_column(self, col: str) -> List[float]:
         """
-        Generate summary statistics for numeric columns
-        Returns DataFrame with count, mean, std, min, 25%, 50%, 75%, max
+        Calculate statistics for a single column (for parallel processing)
+        
+        Args:
+            col: Column name
+            
+        Returns:
+            List of statistics [count, mean, std, min, 25%, 50%, 75%, max]
         """
+        values = [float(v) for v in self._data[col] if v != '' and v is not None]
+        
+        if not values:
+            return [0, 0, 0, 0, 0, 0, 0, 0]
+        
+        values_sorted = sorted(values)
+        n = len(values)
+        mean_val = sum(values) / n
+        
+        # Standard deviation
+        variance = sum((x - mean_val) ** 2 for x in values) / n
+        std_val = variance ** 0.5
+        
+        # Percentiles
+        q25 = values_sorted[int(n * 0.25)] if n > 0 else 0
+        q50 = values_sorted[int(n * 0.50)] if n > 0 else 0
+        q75 = values_sorted[int(n * 0.75)] if n > 0 else 0
+        
+        return [
+            n,
+            round(mean_val, 2),
+            round(std_val, 2),
+            round(min(values), 2),
+            round(q25, 2),
+            round(q50, 2),
+            round(q75, 2),
+            round(max(values), 2)
+        ]
+    
+    def describe(self, parallel: bool = True) -> "DataFrame":
+        """
+        Generate summary statistics for numeric columns with optional parallel processing
+        
+        Args:
+            parallel: Use parallel processing for large datasets (default: True)
+            
+        Returns:
+            DataFrame with count, mean, std, min, 25%, 50%, 75%, max
+        """
+        # Check cache first
+        cache_key = self._get_cache_key('describe', parallel)
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
         stats_data = {}
         numeric_cols = self._get_numeric_columns()
         
         if not numeric_cols:
-            return DataFrame({'message': ['No numeric columns found']})
+            result = DataFrame({'message': ['No numeric columns found']})
+            self._store_in_cache(cache_key, result)
+            return result
         
         stats_data['statistic'] = ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']
         
-        for col in numeric_cols:
-            values = [float(v) for v in self._data[col] if v != '' and v is not None]
-            
-            if values:
-                values_sorted = sorted(values)
-                n = len(values)
-                mean_val = sum(values) / n
+        # Use parallel processing for multiple columns and large datasets
+        if parallel and self._n_jobs > 1 and len(numeric_cols) > 1:
+            try:
+                # Parallel processing
+                with Pool(min(self._n_jobs, len(numeric_cols))) as pool:
+                    results = pool.map(self._describe_column, numeric_cols)
                 
-                # Standard deviation
-                variance = sum((x - mean_val) ** 2 for x in values) / n
-                std_val = variance ** 0.5
-                
-                # Percentiles
-                q25 = values_sorted[int(n * 0.25)] if n > 0 else 0
-                q50 = values_sorted[int(n * 0.50)] if n > 0 else 0
-                q75 = values_sorted[int(n * 0.75)] if n > 0 else 0
-                
-                stats_data[col] = [
-                    n,
-                    round(mean_val, 2),
-                    round(std_val, 2),
-                    round(min(values), 2),
-                    round(q25, 2),
-                    round(q50, 2),
-                    round(q75, 2),
-                    round(max(values), 2)
-                ]
-            else:
-                stats_data[col] = [0, 0, 0, 0, 0, 0, 0, 0]
+                # Combine results
+                for col, stats in zip(numeric_cols, results):
+                    stats_data[col] = stats
+            except Exception:
+                # Fall back to sequential if parallel fails
+                for col in numeric_cols:
+                    stats_data[col] = self._describe_column(col)
+        else:
+            # Sequential processing
+            for col in numeric_cols:
+                stats_data[col] = self._describe_column(col)
         
-        return DataFrame(stats_data)
+        result = DataFrame(stats_data)
+        self._store_in_cache(cache_key, result)
+        return result
     
     def mean(self, column: Optional[str] = None) -> Union[float, Dict[str, float]]:
-        """Calculate mean for column(s)"""
+        """
+        Calculate mean for column(s) with smart backend selection and caching
+        
+        Args:
+            column: Column name or None for all numeric columns
+            
+        Returns:
+            Mean value or dictionary of means
+        """
+        # Check cache first
+        cache_key = self._get_cache_key('mean', column)
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
         if column:
-            values = [float(v) for v in self._data.get(column, []) if v != '' and v is not None]
-            return sum(values) / len(values) if values else 0.0
+            # Single column calculation
+            if self._backend == 'numpy':
+                try:
+                    import numpy as np
+                    # Use NumPy for fast computation
+                    result = float(np.nanmean(self._data[column]))
+                except (ImportError, KeyError):
+                    # Fallback to pure Python
+                    values = [float(v) for v in self._data.get(column, []) if v != '' and v is not None]
+                    result = sum(values) / len(values) if values else 0.0
+            else:
+                # Pure Python implementation
+                values = [float(v) for v in self._data.get(column, []) if v != '' and v is not None]
+                result = sum(values) / len(values) if values else 0.0
+            
+            # Store in cache
+            self._store_in_cache(cache_key, result)
+            return result
         else:
             # All numeric columns
             result = {}
             for col in self._get_numeric_columns():
                 result[col] = self.mean(col)
+            
+            # Store in cache
+            self._store_in_cache(cache_key, result)
             return result
     
     def median(self, column: Optional[str] = None) -> Union[float, Dict[str, float]]:
@@ -419,30 +604,106 @@ class DataFrame:
             return result
     
     def std(self, column: Optional[str] = None) -> Union[float, Dict[str, float]]:
-        """Calculate standard deviation for column(s)"""
+        """
+        Calculate standard deviation for column(s) with smart backend and caching
+        
+        Args:
+            column: Column name or None for all numeric columns
+            
+        Returns:
+            Standard deviation value or dictionary of std devs
+        """
+        # Check cache first
+        cache_key = self._get_cache_key('std', column)
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
         if column:
-            values = [float(v) for v in self._data.get(column, []) if v != '' and v is not None]
-            if not values:
-                return 0.0
-            mean_val = sum(values) / len(values)
-            variance = sum((x - mean_val) ** 2 for x in values) / len(values)
-            return variance ** 0.5
+            # Single column calculation
+            if self._backend == 'numpy':
+                try:
+                    import numpy as np
+                    # Use NumPy for fast computation
+                    result = float(np.nanstd(self._data[column]))
+                except (ImportError, KeyError):
+                    # Fallback to pure Python
+                    values = [float(v) for v in self._data.get(column, []) if v != '' and v is not None]
+                    if not values:
+                        result = 0.0
+                    else:
+                        mean_val = sum(values) / len(values)
+                        variance = sum((x - mean_val) ** 2 for x in values) / len(values)
+                        result = variance ** 0.5
+            else:
+                # Pure Python implementation
+                values = [float(v) for v in self._data.get(column, []) if v != '' and v is not None]
+                if not values:
+                    result = 0.0
+                else:
+                    mean_val = sum(values) / len(values)
+                    variance = sum((x - mean_val) ** 2 for x in values) / len(values)
+                    result = variance ** 0.5
+            
+            # Store in cache
+            self._store_in_cache(cache_key, result)
+            return result
         else:
+            # All numeric columns
             result = {}
             for col in self._get_numeric_columns():
                 result[col] = self.std(col)
+            
+            # Store in cache
+            self._store_in_cache(cache_key, result)
             return result
     
     def corr(self) -> "DataFrame":
         """
-        Calculate correlation matrix for numeric columns
+        Calculate correlation matrix for numeric columns with caching
+        
+        Returns:
+            DataFrame containing correlation matrix
         """
+        # Check cache first
+        cache_key = self._get_cache_key('corr')
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
         numeric_cols = self._get_numeric_columns()
         if len(numeric_cols) < 2:
-            return DataFrame({'message': ['Need at least 2 numeric columns']})
+            result = DataFrame({'message': ['Need at least 2 numeric columns']})
+            self._store_in_cache(cache_key, result)
+            return result
         
         corr_data = {'column': numeric_cols}
         
+        # Use NumPy if available and backend is numpy
+        if self._backend == 'numpy':
+            try:
+                import numpy as np
+                # Create matrix of numeric columns
+                data_matrix = np.array([self._data[col] for col in numeric_cols]).T
+                # Calculate correlation matrix
+                corr_matrix = np.corrcoef(data_matrix, rowvar=False)
+                
+                # Convert to dict format
+                for i, col in enumerate(numeric_cols):
+                    corr_data[col] = [round(float(corr_matrix[i, j]), 3) for j in range(len(numeric_cols))]
+            except (ImportError, Exception):
+                # Fall back to pure Python
+                corr_data = self._corr_python(numeric_cols, corr_data)
+        else:
+            # Pure Python implementation
+            corr_data = self._corr_python(numeric_cols, corr_data)
+        
+        result = DataFrame(corr_data)
+        self._store_in_cache(cache_key, result)
+        return result
+    
+    def _corr_python(self, numeric_cols: List[str], corr_data: Dict) -> Dict:
+        """Pure Python correlation calculation"""
         for col1 in numeric_cols:
             corr_values = []
             values1 = [float(v) for v in self._data[col1] if v != '' and v is not None]
@@ -467,7 +728,7 @@ class DataFrame:
             
             corr_data[col1] = corr_values
         
-        return DataFrame(corr_data)
+        return corr_data
     
     def value_counts(self, column: str) -> "DataFrame":
         """Count unique values in column"""
