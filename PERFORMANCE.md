@@ -12,7 +12,7 @@
 
 **Pandas Pipeline:**
 ```
-Your Code → Pandas API → NumPy C Extensions → Memory Allocation → Type Conversion → Computation
+Application Code → Pandas API → NumPy C Extensions → Memory Allocation → Type Conversion → Computation
 ```
 - Multiple abstraction layers
 - Python ↔ C type conversions
@@ -21,7 +21,7 @@ Your Code → Pandas API → NumPy C Extensions → Memory Allocation → Type C
 
 **PySenseDF Pipeline:**
 ```
-Your Code → Direct Python Computation → Result
+Application Code → Direct Python Computation → Result
 ```
 - **Zero overhead** - Direct computation
 - **No type conversion** - Pure Python
