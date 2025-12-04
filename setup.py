@@ -12,10 +12,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysensedf",
-    version="0.4.0",
+    version="0.4.1",
     author="Idriss Bado",
     author_email="idrissbadoolivier@gmail.com",
-    description="AI-powered Python DataFrame that beats Pandas - 27-92x faster with NumPy backend, smart caching, parallel processing, natural language queries",
+    description="AI-powered Python DataFrame that beats Pandas - 27-92x faster with NumPy backend, smart caching, parallel processing, Monte Carlo simulation, natural language queries",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/idrissbado/PySenseDF",
