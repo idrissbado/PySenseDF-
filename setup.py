@@ -12,10 +12,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysensedf",
-    version="0.3.0",
+    version="0.4.0",
     author="Idriss Bado",
     author_email="idrissbadoolivier@gmail.com",
-    description="AI-powered native Python DataFrame that kills Pandas - natural language queries, auto-clean, lazy execution",
+    description="AI-powered Python DataFrame that beats Pandas - 27-92x faster with NumPy backend, smart caching, parallel processing, natural language queries",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/idrissbado/PySenseDF",
@@ -63,6 +63,9 @@ setup(
             "openpyxl>=3.0.0",
             "sqlalchemy>=1.4.0",
         ],
+        "pipeline": [
+            "pipelinescript>=0.1.0",
+        ],
         "full": [
             "numpy>=1.21.0",
             "numba>=0.55.0",
@@ -70,6 +73,7 @@ setup(
             "pyarrow>=6.0.0",
             "openpyxl>=3.0.0",
             "sqlalchemy>=1.4.0",
+            "pipelinescript>=0.1.0",
         ],
         "dev": [
             "pytest>=7.0.0",

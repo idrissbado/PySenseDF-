@@ -903,6 +903,170 @@ class DataFrame:
         from ..ai.feature_ai import auto_generate_features
         return auto_generate_features(self, target)
     
+    def monte_carlo(
+        self,
+        value_column: str,
+        n_simulations: int = 10000,
+        time_periods: int = 252,
+        method: str = 'geometric_brownian',
+        confidence_levels: List[float] = [0.95, 0.99]
+    ) -> Dict[str, Any]:
+        """
+        Perform Monte Carlo simulation on a column
+        
+        Args:
+            value_column: Column to simulate
+            n_simulations: Number of simulation paths (default 10,000)
+            time_periods: Number of time steps (default 252 trading days)
+            method: 'geometric_brownian', 'arithmetic', 'jump_diffusion', or 'historical'
+            confidence_levels: Confidence intervals (e.g., [0.95, 0.99])
+        
+        Returns:
+            Dictionary with simulation results including:
+            - simulations: List of paths
+            - mean_path: Average path
+            - percentiles: Percentile paths
+            - statistics: Summary stats
+            - var: Value at Risk
+            - cvar: Conditional VaR
+        
+        Example:
+            results = df.monte_carlo('stock_price', n_simulations=10000)
+            print(f"Expected value: ${results['statistics']['mean_final']:.2f}")
+            print(f"95% VaR: ${results['var'][0.95]:.2f}")
+        """
+        from ..ai.feature_ai import monte_carlo_simulate
+        return monte_carlo_simulate(
+            self, value_column, n_simulations, time_periods, method, confidence_levels
+        )
+    
+    def scenario_analysis(
+        self,
+        value_column: str,
+        scenarios: Dict[str, Dict[str, float]],
+        time_periods: int = 252
+    ) -> Dict[str, Any]:
+        """
+        Perform scenario analysis with predefined scenarios
+        
+        Args:
+            value_column: Column to analyze
+            scenarios: Dictionary of scenarios
+                Example: {
+                    'bull_market': {'mean': 0.15, 'std': 0.10},
+                    'bear_market': {'mean': -0.10, 'std': 0.25},
+                    'base_case': {'mean': 0.07, 'std': 0.15}
+                }
+            time_periods: Number of time steps
+        
+        Returns:
+            Dictionary with results for each scenario
+        
+        Example:
+            scenarios = {
+                'optimistic': {'mean': 0.12, 'std': 0.15},
+                'pessimistic': {'mean': -0.05, 'std': 0.25}
+            }
+            results = df.scenario_analysis('revenue', scenarios)
+        """
+        from ..ai.feature_ai import scenario_analysis
+        return scenario_analysis(self, value_column, scenarios, time_periods)
+    
+    def stress_test(
+        self,
+        value_column: str,
+        stress_scenarios: List[Dict[str, Any]],
+        n_simulations: int = 1000
+    ) -> Dict[str, Any]:
+        """
+        Perform stress testing with extreme scenarios
+        
+        Args:
+            value_column: Column to stress test
+            stress_scenarios: List of stress scenarios
+                Example: [
+                    {'name': '2008 Crisis', 'shock': -0.50, 'volatility_multiplier': 3},
+                    {'name': 'Black Swan', 'shock': -0.75, 'volatility_multiplier': 5}
+                ]
+            n_simulations: Number of simulations per scenario
+        
+        Returns:
+            Dictionary with stress test results
+        
+        Example:
+            stress = [
+                {'name': 'Market Crash', 'shock': -0.40, 'volatility_multiplier': 4}
+            ]
+            results = df.stress_test('portfolio_value', stress)
+        """
+        from ..ai.feature_ai import stress_test
+        return stress_test(self, value_column, stress_scenarios, n_simulations)
+    
+    def portfolio_monte_carlo(
+        self,
+        asset_columns: List[str],
+        weights: Optional[List[float]] = None,
+        n_simulations: int = 10000,
+        time_periods: int = 252
+    ) -> Dict[str, Any]:
+        """
+        Monte Carlo simulation for portfolio of multiple assets
+        
+        Args:
+            asset_columns: List of column names for assets
+            weights: Portfolio weights (equal weight if None)
+            n_simulations: Number of simulation paths
+            time_periods: Number of time steps
+        
+        Returns:
+            Dictionary with portfolio simulation results
+        
+        Example:
+            results = df.portfolio_monte_carlo(
+                ['stock_a', 'stock_b', 'stock_c'],
+                weights=[0.5, 0.3, 0.2]
+            )
+        """
+        from ..ai.feature_ai import portfolio_monte_carlo
+        return portfolio_monte_carlo(
+            self, asset_columns, weights, n_simulations, time_periods
+        )
+    
+    def sensitivity_analysis(
+        self,
+        value_column: str,
+        parameter_ranges: Dict[str, List[float]],
+        base_params: Dict[str, float],
+        n_simulations: int = 1000,
+        time_periods: int = 252
+    ) -> Dict[str, Any]:
+        """
+        Perform sensitivity analysis by varying parameters
+        
+        Args:
+            value_column: Column to analyze
+            parameter_ranges: Dictionary of parameter ranges
+                Example: {
+                    'mean': [-0.10, 0.0, 0.05, 0.10, 0.15],
+                    'std': [0.10, 0.15, 0.20, 0.25, 0.30]
+                }
+            base_params: Base case parameters
+            n_simulations: Number of simulations per parameter set
+            time_periods: Number of time steps
+        
+        Returns:
+            Dictionary with sensitivity results
+        
+        Example:
+            param_ranges = {'mean': [0.05, 0.10, 0.15]}
+            base = {'mean': 0.10, 'std': 0.20}
+            results = df.sensitivity_analysis('returns', param_ranges, base)
+        """
+        from ..ai.feature_ai import sensitivity_analysis
+        return sensitivity_analysis(
+            self, value_column, parameter_ranges, base_params, n_simulations, time_periods
+        )
+    
     def sql(self, query: str) -> "DataFrame":
         """
         Execute SQL query on DataFrame

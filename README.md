@@ -548,6 +548,117 @@ pip install pysensedf[full]
 
 ---
 
+## 🎲 Monte Carlo Simulation & Risk Analysis (v0.4.0+)
+
+Run 10,000+ simulations in seconds with parallel processing!
+
+```python
+# Basic Monte Carlo simulation
+results = df.monte_carlo(
+    'stock_price',
+    n_simulations=10000,
+    time_periods=252,
+    method='geometric_brownian'
+)
+
+print(f"Expected Value: ${results['statistics']['mean_final']:.2f}")
+print(f"95% VaR: ${results['var'][0.95]:.2f}")
+print(f"Probability of Profit: {results['statistics']['probability_positive']:.1%}")
+
+# Portfolio simulation (multiple assets)
+results = df.portfolio_monte_carlo(
+    ['stock_a', 'stock_b', 'bonds'],
+    weights=[0.5, 0.3, 0.2],
+    n_simulations=10000
+)
+
+# Scenario analysis
+scenarios = {
+    'bull_market': {'mean': 0.15, 'std': 0.10},
+    'bear_market': {'mean': -0.10, 'std': 0.25}
+}
+results = df.scenario_analysis('portfolio_value', scenarios)
+
+# Stress testing
+stress = [
+    {'name': '2008 Crisis', 'shock': -0.50, 'volatility_multiplier': 3}
+]
+results = df.stress_test('portfolio_value', stress)
+
+# Sensitivity analysis
+param_ranges = {
+    'mean': [0.05, 0.10, 0.15],
+    'std': [0.10, 0.15, 0.20]
+}
+results = df.sensitivity_analysis('returns', param_ranges, base_params={'mean': 0.10, 'std': 0.15})
+```
+
+**Methods Available:**
+- `monte_carlo()` - Geometric Brownian Motion, Arithmetic, Jump Diffusion, Historical
+- `portfolio_monte_carlo()` - Multi-asset portfolio simulation
+- `scenario_analysis()` - Compare predefined scenarios
+- `stress_test()` - Extreme scenario testing
+- `sensitivity_analysis()` - Parameter sensitivity testing
+
+**See [MONTE_CARLO_GUIDE.md](MONTE_CARLO_GUIDE.md) for complete guide with 10+ real-world examples!**
+
+---
+
+## 🔗 PipelineScript Integration
+
+Combine with [PipelineScript](https://pypi.org/project/pipelinescript/) for human-readable ML pipelines!
+
+```bash
+pip install pipelinescript
+```
+
+```python
+from pysensedf.integrations.pipelinescript_integration import quick_ml_pipeline
+
+# Complete ML pipeline in one line
+results = quick_ml_pipeline(
+    df,
+    target='price',
+    model='xgboost',
+    task='regression'
+)
+
+# Monte Carlo + ML Pipeline
+from pysensedf.integrations.pipelinescript_integration import monte_carlo_pipeline
+
+results = monte_carlo_pipeline(
+    df,
+    value_column='stock_price',
+    pipeline_script='''
+    clean missing
+    encode
+    split 80/20 --target future_return
+    train xgboost
+    evaluate
+    ''',
+    n_simulations=5000
+)
+
+# Execute PipelineScript DSL
+result, df_output = df.execute_psl('''
+    clean missing
+    encode
+    scale
+    split 75/25 --target label
+    train xgboost
+    evaluate
+''', target='label')
+```
+
+**PipelineScript Features:**
+- 🗣️ Human-readable ML pipeline language
+- 🐛 Interactive debugging with breakpoints
+- 📊 Built-in pipeline visualization
+- 🔗 Method chaining API
+- ⚡ Quick builders for common tasks
+
+---
+
 ## 🛣️ Roadmap
 
 ### v0.1.0 (Current)
